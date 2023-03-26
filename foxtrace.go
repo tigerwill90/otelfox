@@ -14,6 +14,7 @@ const (
 	tracerName = "github.com/tigerwill90/otelfox"
 )
 
+// Tracer is a Fox middleware that traces HTTP requests using OpenTelemetry.
 type Tracer struct {
 	service    string
 	tracer     trace.Tracer
@@ -21,6 +22,8 @@ type Tracer struct {
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 }
 
+// New creates a new Tracer middleware for the given service.
+// Options can be provided to configure the tracer.
 func New(service string, opts ...Option) *Tracer {
 	cfg := defaultConfig()
 	for _, opt := range opts {
@@ -35,6 +38,9 @@ func New(service string, opts ...Option) *Tracer {
 	}
 }
 
+// Middleware returns a Fox middleware function that traces HTTP requests.
+// The span name for each request is retrieved from fox.Params using params.Get(fox.RouteKey).
+// If the matched route is not found in params, the span name is set to "HTTP {method} route not found".
 func (t *Tracer) Middleware(h fox.Handler) fox.Handler {
 	return fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
 		ctx := t.propagator.Extract(r.Context(), t.carrier(r))
@@ -45,6 +51,8 @@ func (t *Tracer) Middleware(h fox.Handler) fox.Handler {
 		}
 		if spanName == "" {
 			spanName = fmt.Sprintf("HTTP %s route not found", r.Method)
+		} else {
+			opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
 		}
 
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)

@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"net/http/httptest"
-	"net/http/httputil"
 	"testing"
 
 	b3prop "go.opentelemetry.io/contrib/propagators/b3"
@@ -80,11 +79,6 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider), WithPropagators(b3))
 	err := router.Handler(http.MethodGet, "/user/:id", mw.Middleware(fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		buf, err := httputil.DumpRequest(r, false)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(string(buf))
 		span := trace.SpanFromContext(r.Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
