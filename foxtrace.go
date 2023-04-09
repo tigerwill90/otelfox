@@ -3,6 +3,7 @@ package otelfox
 import (
 	"fmt"
 	"github.com/tigerwill90/fox"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.opentelemetry.io/otel/semconv/v1.18.0/httpconv"
@@ -40,7 +41,7 @@ func New(service string, opts ...Option) *Tracer {
 }
 
 func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
-	return func(c fox.Context) {
+	return func(c fox.Context) error {
 
 		req := c.Request()
 		ctx := t.propagator.Extract(req.Context(), t.carrier(req))
@@ -62,12 +63,18 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 
 		c.SetRequest(c.Request().WithContext(ctx))
 
-		next(c)
+		err := next(c)
 
 		status := c.Writer().Status()
 		span.SetStatus(httpconv.ServerStatus(status))
 		if status > 0 {
 			span.SetAttributes(semconv.HTTPStatusCode(status))
 		}
+
+		if err != nil {
+			span.SetAttributes(attribute.String("fox.error", err.Error()))
+		}
+
+		return err
 	}
 }
