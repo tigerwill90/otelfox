@@ -29,6 +29,7 @@ func New(service string, opts ...Option) *Tracer {
 	for _, opt := range opts {
 		opt.apply(cfg)
 	}
+
 	tracer := cfg.provider.Tracer(tracerName, trace.WithInstrumentationVersion(SemVersion()))
 	return &Tracer{
 		service:    service,
@@ -38,19 +39,20 @@ func New(service string, opts ...Option) *Tracer {
 	}
 }
 
-// Middleware returns a Fox middleware function that traces HTTP requests.
-// The span name for each request is retrieved from fox.Params using params.Get(fox.RouteKey).
-// If the matched route is not found in params, the span name is set to "HTTP {method} route not found".
-func (t *Tracer) Middleware(h fox.Handler) fox.Handler {
-	return fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		ctx := t.propagator.Extract(r.Context(), t.carrier(r))
-		spanName := params.Get(fox.RouteKey)
+func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
+	return func(c fox.Context) {
+
+		req := c.Request()
+		ctx := t.propagator.Extract(req.Context(), t.carrier(req))
+
+		spanName := c.Path()
 		opts := []trace.SpanStartOption{
-			trace.WithAttributes(httpconv.ServerRequest(t.service, r)...),
+			trace.WithAttributes(httpconv.ServerRequest(t.service, c.Request())...),
 			trace.WithSpanKind(trace.SpanKindServer),
 		}
+
 		if spanName == "" {
-			spanName = fmt.Sprintf("HTTP %s route not found", r.Method)
+			spanName = fmt.Sprintf("HTTP %s route not found", c.Request().Method)
 		} else {
 			opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
 		}
@@ -58,15 +60,14 @@ func (t *Tracer) Middleware(h fox.Handler) fox.Handler {
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
-		recorder := newResponseStatusRecorder(w)
-		defer recorder.free()
+		c.SetRequest(c.Request().WithContext(ctx))
 
-		h.ServeHTTP(recorder.w, r.WithContext(ctx), params)
-		status := recorder.status
+		next(c)
 
+		status := c.Writer().Status()
 		span.SetStatus(httpconv.ServerStatus(status))
 		if status > 0 {
 			span.SetAttributes(semconv.HTTPStatusCode(status))
 		}
-	})
+	}
 }

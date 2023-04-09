@@ -1,7 +1,11 @@
 # [WIP] Otelfox
 
-Otelfox is a middleware for the [Fox HTTP router](https://github.com/tigerwill90/fox) that provides distributed 
+Otelfox is a middleware for the [Fox](https://github.com/tigerwill90/fox) that provides distributed 
 tracing using [OpenTelemetry](https://opentelemetry.io/).
+
+## Disclaimer
+Otelfox's API is linked to Fox router, and it will only reach v1 when the router is stabilized.
+During the pre-v1 phase, breaking changes may occur and will be documented in the release notes.
 
 ## Getting started
 ### Installation
@@ -20,65 +24,23 @@ go get -u github.com/tigerwill90/otelfox
 package main
 
 import (
-	"fmt"
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 )
 
 func main() {
-	// Create a new Fox router and enable the option to save the matched route.
-	r := fox.New(fox.WithSaveMatchedRoute(true))
+	otel := otelfox.New("fox")
+	r := fox.New(
+		fox.WithMiddleware(otel.Trace),
+		fox.WithRouteNotFound(fox.NotFoundHandler(), otel.Trace),
+	)
 
-	tracer := otelfox.New("my-service")
+	r.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {
+		_ = c.String(http.StatusOK, "hello %s\n", c.Param("name"))
+	})
 
-	// Wrap a fox.Handler with the middleware.
-	handler := tracer.Middleware(fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		span := trace.SpanFromContext(r.Context())
-		span.SetAttributes(attribute.String("name", params.Get("name")))
-		_, _ = fmt.Fprintf(w, "Hello, %s\n", params.Get("name"))
-	}))
-
-	// Register the wrapped handler.
-	_ = r.Handler(http.MethodGet, "/hello/:name", handler)
-
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
-```` 
-
-You can also use Otelfox in conjunction with [Foxchain](https://github.com/tigerwill90/foxchain) for seamless integration.
-
-````go
-package main
-
-import (
-	"fmt"
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/foxchain"
-	"github.com/tigerwill90/otelfox"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-	"log"
-	"net/http"
-)
-
-func main() {
-	// Create a new Fox router and enable the option to save the matched route.
-	r := fox.New(fox.WithSaveMatchedRoute(true))
-
-	// Create a middleware chain for otelfox.
-	chain := foxchain.New(otelfox.New("my-service"))
-
-	// Register the wrapped handler.
-	_ = r.Handler(http.MethodGet, "/hello/:name", chain.Then(fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		span := trace.SpanFromContext(r.Context())
-		span.SetAttributes(attribute.String("name", params.Get("name")))
-		_, _ = fmt.Fprintf(w, "Hello, %s\n", params.Get("name"))
-	})))
-
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatalln(http.ListenAndServe(":8080", r))
 }
 ````

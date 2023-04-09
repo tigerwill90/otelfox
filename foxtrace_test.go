@@ -18,12 +18,12 @@ import (
 
 func TestGetSpanNotInstrumented(t *testing.T) {
 	router := fox.New()
-	require.NoError(t, router.Handler(http.MethodGet, "/ping", fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, parms fox.Params) {
-		span := trace.SpanFromContext(r.Context())
+	require.NoError(t, router.Handle(http.MethodGet, "/ping", func(c fox.Context) {
+		span := trace.SpanFromContext(c.Request().Context())
 		ok := !span.SpanContext().IsValid()
 		assert.True(t, ok)
-		_, _ = fmt.Fprint(w, "ok")
-	})))
+		_, _ = fmt.Fprint(c.Writer(), "ok")
+	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
@@ -50,11 +50,11 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider))
-	err := router.Handler(http.MethodGet, "/user/:id", mw.Middleware(fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		span := trace.SpanFromContext(r.Context())
+	err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	})))
+	}))
 
 	require.NoError(t, err)
 	router.ServeHTTP(w, r)
@@ -78,11 +78,11 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider), WithPropagators(b3))
-	err := router.Handler(http.MethodGet, "/user/:id", mw.Middleware(fox.HandlerFunc(func(w http.ResponseWriter, r *http.Request, params fox.Params) {
-		span := trace.SpanFromContext(r.Context())
+	err := router.Handle(http.MethodGet, "/user/:id", mw.Trace(func(c fox.Context) {
+		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	})))
+	}))
 
 	require.NoError(t, err)
 	router.ServeHTTP(w, r)
