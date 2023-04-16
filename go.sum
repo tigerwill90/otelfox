@@ -22,8 +22,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/tigerwill90/fox v0.7.1 h1:DMavi0N1+IIDVvh1opi5NGm2EojibsFY8SEcYoWyHUY=
-github.com/tigerwill90/fox v0.7.1/go.mod h1:MdAVSWOSSlp+MExhsvqWF1kedhAnMsV90VTcaaQdKWo=
+github.com/tigerwill90/fox v0.7.5 h1:z7HbpzabycClXM6JdLmCfvGQOua1Gr3sPfk5ppbj2vQ=
+github.com/tigerwill90/fox v0.7.5/go.mod h1:MdAVSWOSSlp+MExhsvqWF1kedhAnMsV90VTcaaQdKWo=
 go.opentelemetry.io/contrib/propagators/b3 v1.15.0 h1:bMaonPyFcAvZ4EVzkUNkfnUHP5Zi63CIDlA3dRsEg8Q=
 go.opentelemetry.io/contrib/propagators/b3 v1.15.0/go.mod h1:VjU0g2v6HSQ+NwfifambSLAeBgevjIcqmceaKWEzl0c=
 go.opentelemetry.io/otel v1.14.0 h1:/79Huy8wbf5DnIPhemGB+zEPVwnN6fuQybr/SRXa6hM=

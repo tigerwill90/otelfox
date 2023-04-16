@@ -21,6 +21,7 @@ type config struct {
 	provider   trace.TracerProvider
 	propagator propagation.TextMapPropagator
 	carrier    func(r *http.Request) propagation.TextMapCarrier
+	spanFmt    func(r *http.Request) string
 }
 
 func defaultConfig() *config {
@@ -61,5 +62,13 @@ func WithTextMapCarrier(fn func(r *http.Request) propagation.TextMapCarrier) Opt
 		if fn != nil {
 			c.carrier = fn
 		}
+	})
+}
+
+// WithSpanNameFormatter takes a function that will be called on every request
+// and the returned string will become the Span Name.
+func WithSpanNameFormatter(fn func(r *http.Request) string) Option {
+	return optionFunc(func(c *config) {
+		c.spanFmt = fn
 	})
 }

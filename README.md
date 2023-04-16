@@ -31,10 +31,38 @@ import (
 )
 
 func main() {
-	otel := otelfox.New("fox")
 	r := fox.New(
-		fox.WithMiddleware(otel.Trace),
-		fox.WithRouteNotFound(fox.NotFoundHandler(), otel.Trace),
+		fox.WithMiddleware(otelfox.Middleware("fox")),
+	)
+
+	r.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {
+		_ = c.String(http.StatusOK, "hello %s\n", c.Param("name"))
+	})
+
+	log.Fatalln(http.ListenAndServe(":8080", r))
+}
+````
+
+Register the middleware with a custom span name
+
+````go
+package main
+
+import (
+	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/otelfox"
+	"log"
+	"net/http"
+)
+
+var SpanFormater404 = otelfox.WithSpanNameFormatter(func(r *http.Request) string {
+	return "404 not found"
+})
+
+func main() {
+	r := fox.New(
+		fox.WithMiddlewareFor(fox.RouteHandlers, otelfox.Middleware("fox")),
+		fox.WithMiddlewareFor(fox.NotFoundHandler, otelfox.Middleware("fox", SpanFormater404)),
 	)
 
 	r.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {

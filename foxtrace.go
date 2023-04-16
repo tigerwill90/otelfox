@@ -3,7 +3,6 @@ package otelfox
 import (
 	"fmt"
 	"github.com/tigerwill90/fox"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.opentelemetry.io/otel/semconv/v1.18.0/httpconv"
@@ -21,6 +20,7 @@ type Tracer struct {
 	tracer     trace.Tracer
 	propagator propagation.TextMapPropagator
 	carrier    func(r *http.Request) propagation.TextMapCarrier
+	spanFmt    func(r *http.Request) string
 }
 
 // New creates a new Tracer middleware for the given service.
@@ -37,19 +37,31 @@ func New(service string, opts ...Option) *Tracer {
 		tracer:     tracer,
 		propagator: cfg.propagator,
 		carrier:    cfg.carrier,
+		spanFmt:    cfg.spanFmt,
 	}
 }
 
+func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
+	tracer := New(service, opts...)
+	return tracer.Trace
+}
+
 func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
-	return func(c fox.Context) error {
+	return func(c fox.Context) {
 
 		req := c.Request()
 		ctx := t.propagator.Extract(req.Context(), t.carrier(req))
 
-		spanName := c.Path()
 		opts := []trace.SpanStartOption{
-			trace.WithAttributes(httpconv.ServerRequest(t.service, c.Request())...),
+			trace.WithAttributes(httpconv.ServerRequest(t.service, req)...),
 			trace.WithSpanKind(trace.SpanKindServer),
+		}
+
+		var spanName string
+		if t.spanFmt == nil {
+			spanName = c.Path()
+		} else {
+			spanName = t.spanFmt(req)
 		}
 
 		if spanName == "" {
@@ -61,20 +73,14 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
-		c.SetRequest(c.Request().WithContext(ctx))
+		c.SetRequest(req.WithContext(ctx))
 
-		err := next(c)
+		next(c)
 
 		status := c.Writer().Status()
 		span.SetStatus(httpconv.ServerStatus(status))
 		if status > 0 {
 			span.SetAttributes(semconv.HTTPStatusCode(status))
 		}
-
-		if err != nil {
-			span.SetAttributes(attribute.String("fox.error", err.Error()))
-		}
-
-		return err
 	}
 }
