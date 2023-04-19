@@ -5,7 +5,7 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tigerwill90/otelfox)
 # Otelfox
 
-Otelfox is a middleware for the [Fox](https://github.com/tigerwill90/fox) that provides distributed 
+Otelfox is a middleware for [Fox](https://github.com/tigerwill90/fox) that provides distributed 
 tracing using [OpenTelemetry](https://opentelemetry.io/).
 
 ## Disclaimer
