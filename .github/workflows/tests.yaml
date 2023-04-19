@@ -1,0 +1,47 @@
+name: tests
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Otelfox
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '>=1.19' ]
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run tests
+        run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          flags: coverage.txt
+  lint:
+    name: Lint Otelfox
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '>=1.19' ]
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v3
