@@ -17,11 +17,16 @@ func (o optionFunc) apply(c *config) {
 	o(c)
 }
 
+type Filter func(r *http.Request) bool
+
+type SpanNameFormatter func(r *http.Request) string
+
 type config struct {
 	provider   trace.TracerProvider
 	propagator propagation.TextMapPropagator
 	carrier    func(r *http.Request) propagation.TextMapCarrier
-	spanFmt    func(r *http.Request) string
+	spanFmt    SpanNameFormatter
+	filters    []Filter
 }
 
 func defaultConfig() *config {
@@ -67,8 +72,18 @@ func WithTextMapCarrier(fn func(r *http.Request) propagation.TextMapCarrier) Opt
 
 // WithSpanNameFormatter takes a function that will be called on every request
 // and the returned string will become the Span Name.
-func WithSpanNameFormatter(fn func(r *http.Request) string) Option {
+func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 	return optionFunc(func(c *config) {
 		c.spanFmt = fn
+	})
+}
+
+// WithFilter appends the provided filters to the middleware's filter list.
+// A filter returning false will exclude the request from being traced. If no filters
+// are provided, all requests will be traced. Keep in mind that filters are invoked for each request,
+// so they should be simple and efficient.
+func WithFilter(f ...Filter) Option {
+	return optionFunc(func(c *config) {
+		c.filters = append(c.filters, f...)
 	})
 }
