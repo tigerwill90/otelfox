@@ -2,6 +2,7 @@ package otelfox
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
@@ -17,9 +18,18 @@ func (o optionFunc) apply(c *config) {
 	o(c)
 }
 
+// Filter is a function that determines whether a given HTTP request should be traced.
+// It returns true to indicate the request should be traced or false otherwise.
 type Filter func(r *http.Request) bool
 
+// SpanNameFormatter is a function that formats the span name given the HTTP request.
+// This allows for dynamic naming of spans based on attributes of the request.
 type SpanNameFormatter func(r *http.Request) string
+
+// SpanAttributesFunc is a function type that can be used to dynamically
+// generate span attributes for a given HTTP request. It is used in
+// conjunction with the WithSpanAttributes middleware option.
+type SpanAttributesFunc func(r *http.Request) []attribute.KeyValue
 
 type config struct {
 	provider   trace.TracerProvider
@@ -27,6 +37,7 @@ type config struct {
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 	spanFmt    SpanNameFormatter
 	filters    []Filter
+	attrsFn    SpanAttributesFunc
 }
 
 func defaultConfig() *config {
@@ -85,5 +96,15 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 func WithFilter(f ...Filter) Option {
 	return optionFunc(func(c *config) {
 		c.filters = append(c.filters, f...)
+	})
+}
+
+// WithSpanAttributes specifies a function for generating span attributes.
+// The function will be invoked for each request, and its return attributes
+// will be added to the span. For example, you can use this option to add
+// the http.target attribute to the span.
+func WithSpanAttributes(fn SpanAttributesFunc) Option {
+	return optionFunc(func(c *config) {
+		c.attrsFn = fn
 	})
 }
