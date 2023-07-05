@@ -59,8 +59,13 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 
 		ctx := t.cfg.propagator.Extract(req.Context(), t.cfg.carrier(req))
 
+		attributes := httpconv.ServerRequest(t.service, req)
+		if t.cfg.attrsFn != nil {
+			attributes = append(attributes, t.cfg.attrsFn(req)...)
+		}
+
 		opts := []trace.SpanStartOption{
-			trace.WithAttributes(httpconv.ServerRequest(t.service, req)...),
+			trace.WithAttributes(attributes...),
 			trace.WithSpanKind(trace.SpanKindServer),
 		}
 
