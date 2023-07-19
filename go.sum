@@ -16,8 +16,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
 github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
 github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/tigerwill90/fox v0.9.4 h1:uqZqwSDbso1gs1U7kw4Y6srXOLFNgMjKQUNIZWr5kak=
-github.com/tigerwill90/fox v0.9.4/go.mod h1:frBRK49d4TXcELy3911opGU3RZQSUq++BHQUwhykpQw=
+github.com/tigerwill90/fox v0.10.0 h1:6E+rJYLF79wuc+RAMUggotGtO1e4TdcjjKG6n4q6TCk=
+github.com/tigerwill90/fox v0.10.0/go.mod h1:frBRK49d4TXcELy3911opGU3RZQSUq++BHQUwhykpQw=
 go.opentelemetry.io/contrib/propagators/b3 v1.17.0 h1:ImOVvHnku8jijXqkwCSyYKRDt2YrnGXD4BbhcpfbfJo=
 go.opentelemetry.io/contrib/propagators/b3 v1.17.0/go.mod h1:IkfUfMpKWmynvvE0264trz0sf32NRTZL4nuAN9AbWRc=
 go.opentelemetry.io/otel v1.16.0 h1:Z7GVAX/UkAXPKsy94IU+i6thsQS4nb7LviLpnaNeW8s=
