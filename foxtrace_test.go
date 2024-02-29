@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,7 +34,7 @@ func TestGetSpanNotInstrumented(t *testing.T) {
 }
 
 func TestPropagationWithGlobalPropagators(t *testing.T) {
-	provider := trace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 	otel.SetTextMapPropagator(b3prop.New())
 
 	r := httptest.NewRequest("GET", "/user/123", nil)
@@ -61,7 +62,7 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 }
 
 func TestPropagationWithCustomPropagators(t *testing.T) {
-	provider := trace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 	b3 := b3prop.New()
 
 	r := httptest.NewRequest("GET", "/user/123", nil)
@@ -89,7 +90,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 }
 
 func TestWithSpanAttributes(t *testing.T) {
-	provider := trace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 	otel.SetTextMapPropagator(b3prop.New())
 
 	r := httptest.NewRequest("GET", "/user/123?foo=bar", nil)
