@@ -2,7 +2,7 @@ package otelfox
 
 import "fmt"
 
-const version = "v0.11.0"
+const version = "v0.14.0"
 
 var semver = fmt.Sprintf("semver:%s", version)
 

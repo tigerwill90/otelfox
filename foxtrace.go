@@ -57,6 +57,11 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 			}
 		}
 
+		savedCtx := req.Context()
+		defer func() {
+			c.SetRequest(req.WithContext(savedCtx))
+		}()
+
 		ctx := t.cfg.propagator.Extract(req.Context(), t.cfg.carrier(req))
 
 		attributes := httpconv.ServerRequest(t.service, req)
