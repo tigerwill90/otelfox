@@ -79,7 +79,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider), WithPropagators(b3))
-	err := router.Handle(http.MethodGet, "/user/:id", mw.Trace(func(c fox.Context) {
+	err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
