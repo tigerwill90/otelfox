@@ -90,11 +90,12 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
-		c.SetRequest(req.WithContext(ctx))
+		cc := c.CloneWith(c.Writer(), req.WithContext(ctx))
+		defer cc.Close()
 
-		next(c)
+		next(cc)
 
-		status := c.Writer().Status()
+		status := cc.Writer().Status()
 		span.SetStatus(httpconv.ServerStatus(status))
 		if status > 0 {
 			span.SetAttributes(semconv.HTTPStatusCode(status))
