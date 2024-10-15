@@ -1,6 +1,7 @@
 package otelfox
 
 import (
+	"github.com/tigerwill90/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -19,17 +20,17 @@ func (o optionFunc) apply(c *config) {
 }
 
 // Filter is a function that determines whether a given HTTP request should be traced.
-// It returns true to indicate the request should be traced or false otherwise.
-type Filter func(r *http.Request) bool
+// It returns true to indicate the request should not be traced.
+type Filter func(c fox.Context) bool
 
 // SpanNameFormatter is a function that formats the span name given the HTTP request.
 // This allows for dynamic naming of spans based on attributes of the request.
-type SpanNameFormatter func(r *http.Request) string
+type SpanNameFormatter func(c fox.Context) string
 
 // SpanAttributesFunc is a function type that can be used to dynamically
 // generate span attributes for a given HTTP request. It is used in
 // conjunction with the WithSpanAttributes middleware option.
-type SpanAttributesFunc func(r *http.Request) []attribute.KeyValue
+type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
 
 type config struct {
 	provider   trace.TracerProvider
@@ -90,7 +91,7 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 }
 
 // WithFilter appends the provided filters to the middleware's filter list.
-// A filter returning false will exclude the request from being traced. If no filters
+// A filter returning true will exclude the request from being traced. If no filters
 // are provided, all requests will be traced. Keep in mind that filters are invoked for each request,
 // so they should be simple and efficient.
 func WithFilter(f ...Filter) Option {
