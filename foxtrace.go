@@ -51,7 +51,7 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 		req := c.Request()
 
 		for _, f := range t.cfg.filters {
-			if !f(req) {
+			if f(c) {
 				next(c)
 				return
 			}
@@ -59,14 +59,15 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 
 		savedCtx := req.Context()
 		defer func() {
+			// rollback to the original context
 			c.SetRequest(req.WithContext(savedCtx))
 		}()
 
-		ctx := t.cfg.propagator.Extract(req.Context(), t.cfg.carrier(req))
+		ctx := t.cfg.propagator.Extract(savedCtx, t.cfg.carrier(req))
 
 		attributes := httpconv.ServerRequest(t.service, req)
 		if t.cfg.attrsFn != nil {
-			attributes = append(attributes, t.cfg.attrsFn(req)...)
+			attributes = append(attributes, t.cfg.attrsFn(c)...)
 		}
 
 		opts := []trace.SpanStartOption{
@@ -78,7 +79,7 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 		if t.cfg.spanFmt == nil {
 			spanName = c.Path()
 		} else {
-			spanName = t.cfg.spanFmt(req)
+			spanName = t.cfg.spanFmt(c)
 		}
 
 		if spanName == "" {
@@ -90,12 +91,12 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
-		cc := c.CloneWith(c.Writer(), req.WithContext(ctx))
-		defer cc.Close()
+		// pass the span through the request context
+		c.SetRequest(req.WithContext(ctx))
 
-		next(cc)
+		next(c)
 
-		status := cc.Writer().Status()
+		status := c.Writer().Status()
 		span.SetStatus(httpconv.ServerStatus(status))
 		if status > 0 {
 			span.SetAttributes(semconv.HTTPStatusCode(status))

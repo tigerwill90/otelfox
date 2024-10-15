@@ -19,12 +19,13 @@ import (
 
 func TestGetSpanNotInstrumented(t *testing.T) {
 	router := fox.New()
-	require.NoError(t, router.Handle(http.MethodGet, "/ping", func(c fox.Context) {
+	_, err := router.Handle(http.MethodGet, "/ping", func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		ok := !span.SpanContext().IsValid()
 		assert.True(t, ok)
 		_ = c.String(http.StatusOK, "ok")
-	}))
+	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
@@ -51,7 +52,7 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider))
-	err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+	_, err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
@@ -79,7 +80,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 
 	router := fox.New()
 	mw := New("foobar", WithTracerProvider(provider), WithPropagators(b3))
-	err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+	_, err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
@@ -106,16 +107,22 @@ func TestWithSpanAttributes(t *testing.T) {
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	router := fox.New()
-	mw := New("foobar", WithTracerProvider(provider), WithSpanAttributes(func(r *http.Request) []attribute.KeyValue {
-		attrs := make([]attribute.KeyValue, 1)
+	mw := New("foobar", WithTracerProvider(provider), WithSpanAttributes(func(c fox.Context) []attribute.KeyValue {
+		attrs := make([]attribute.KeyValue, 1, 2)
 		attrs[0] = attribute.String("http.target", r.URL.String())
+		for annotation := range c.Route().Annotations() {
+			attrs = append(attrs, attribute.KeyValue{
+				Key:   attribute.Key(annotation.Key),
+				Value: attribute.StringValue(annotation.Value.(string)),
+			})
+		}
 		return attrs
 	}))
-	err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+	_, err := router.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	}))
+	}), fox.WithAnnotation("foo", "bar"))
 
 	require.NoError(t, err)
 	router.ServeHTTP(w, r)
