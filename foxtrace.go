@@ -19,7 +19,7 @@ type Tracer struct {
 	cfg     *config
 }
 
-// New creates a new Tracer middleware for the given service.
+// New creates a new [Tracer] middleware for the given service.
 // Options can be provided to configure the tracer.
 func New(service string, opts ...Option) *Tracer {
 	cfg := defaultConfig()
@@ -35,7 +35,7 @@ func New(service string, opts ...Option) *Tracer {
 	}
 }
 
-// Middleware is a convenience function that creates a new Tracer middleware instance
+// Middleware is a convenience function that creates a new [Tracer] middleware instance
 // for the specified service and returns the Trace middleware function.
 // Options can be provided to configure the tracer.
 func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
@@ -77,7 +77,7 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 
 		var spanName string
 		if t.cfg.spanFmt == nil {
-			spanName = c.Path()
+			spanName = c.Pattern()
 		} else {
 			spanName = t.cfg.spanFmt(c)
 		}

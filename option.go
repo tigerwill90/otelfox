@@ -29,7 +29,7 @@ type SpanNameFormatter func(c fox.Context) string
 
 // SpanAttributesFunc is a function type that can be used to dynamically
 // generate span attributes for a given HTTP request. It is used in
-// conjunction with the WithSpanAttributes middleware option.
+// conjunction with the [WithSpanAttributes] middleware option.
 type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
 
 type config struct {
@@ -73,7 +73,7 @@ func WithTracerProvider(provider trace.TracerProvider) Option {
 }
 
 // WithTextMapCarrier specify a carrier to use for extracting information from http request.
-// If none is specified, propagation.HeaderCarrier is used.
+// If none is specified, [propagation.HeaderCarrier] is used.
 func WithTextMapCarrier(fn func(r *http.Request) propagation.TextMapCarrier) Option {
 	return optionFunc(func(c *config) {
 		if fn != nil {
