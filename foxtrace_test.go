@@ -122,7 +122,7 @@ func TestWithSpanAttributes(t *testing.T) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	}), fox.WithAnnotation("foo", "bar"))
+	}), fox.WithAnnotations(fox.Annotation{Key: "foo", Value: "bar"}))
 
 	require.NoError(t, err)
 	router.ServeHTTP(w, r)
