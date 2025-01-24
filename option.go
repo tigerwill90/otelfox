@@ -2,6 +2,7 @@ package otelfox
 
 import (
 	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/fox/clientip"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -35,10 +36,11 @@ type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
 type config struct {
 	provider   trace.TracerProvider
 	propagator propagation.TextMapPropagator
+	resolver   fox.ClientIPResolver
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 	spanFmt    SpanNameFormatter
-	filters    []Filter
 	attrsFn    SpanAttributesFunc
+	filters    []Filter
 }
 
 func defaultConfig() *config {
@@ -48,6 +50,19 @@ func defaultConfig() *config {
 		carrier: func(r *http.Request) propagation.TextMapCarrier {
 			return propagation.HeaderCarrier(r.Header)
 		},
+		resolver: clientip.NewChain(
+			must(clientip.NewLeftmostNonPrivate(clientip.XForwardedForKey, 15)),
+			must(clientip.NewLeftmostNonPrivate(clientip.ForwardedKey, 15)),
+			must(clientip.NewSingleIPHeader(fox.HeaderCFConnectionIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderTrueClientIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderFastClientIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderXAzureClientIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderXAzureSocketIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderXAppengineRemoteAddr)),
+			must(clientip.NewSingleIPHeader(fox.HeaderFlyClientIP)),
+			must(clientip.NewSingleIPHeader(fox.HeaderXRealIP)),
+			clientip.NewRemoteAddr(),
+		),
 	}
 }
 
@@ -108,4 +123,22 @@ func WithSpanAttributes(fn SpanAttributesFunc) Option {
 	return optionFunc(func(c *config) {
 		c.attrsFn = fn
 	})
+}
+
+// WithClientIPResolver sets a custom resolver to determine the client IP address.
+// This is for advanced use case, must user should configure the resolver with Fox's router option using
+// [fox.WithClientIPResolver].
+func WithClientIPResolver(resolver fox.ClientIPResolver) Option {
+	return optionFunc(func(c *config) {
+		if resolver != nil {
+			c.resolver = resolver
+		}
+	})
+}
+
+func must(resolver fox.ClientIPResolver, err error) fox.ClientIPResolver {
+	if err != nil {
+		panic(err)
+	}
+	return resolver
 }
