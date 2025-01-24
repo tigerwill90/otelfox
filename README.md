@@ -30,6 +30,7 @@ go get -u github.com/tigerwill90/otelfox
 package main
 
 import (
+	"errors"
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox"
 	"log"
@@ -37,14 +38,19 @@ import (
 )
 
 func main() {
-	r := fox.New(
+	f, err := fox.New(
 		fox.WithMiddleware(otelfox.Middleware("fox")),
 	)
+	if err != nil {
+		panic(err)
+	}
 
-	r.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {
+	f.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {
 		_ = c.String(http.StatusOK, "hello %s\n", c.Param("name"))
 	})
 
-	log.Fatalln(http.ListenAndServe(":8080", r))
+	if err = http.ListenAndServe(":8080", f); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalln(err)
+	}
 }
 ````
