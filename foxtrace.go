@@ -1,8 +1,10 @@
 package otelfox
 
 import (
+	"errors"
 	"fmt"
 	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/otelfox/internal/clientip"
 	"github.com/tigerwill90/otelfox/internal/semconvutil"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
@@ -12,40 +14,35 @@ const (
 	tracerName = "github.com/tigerwill90/otelfox"
 )
 
-// Tracer is a Fox middleware that traces HTTP requests using OpenTelemetry.
-type Tracer struct {
+type middleware struct {
 	tracer  trace.Tracer
 	cfg     *config
 	service string
 }
 
-// New creates a new [Tracer] middleware for the given service.
-// Options can be provided to configure the tracer.
-func New(service string, opts ...Option) *Tracer {
+// Middleware returns middleware that will trace incoming requests.
+// The service parameter should describe the name of the (virtual)
+// server handling the request.
+func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
+	tracer := createTracer(service, opts...)
+	return tracer.trace
+}
+
+func createTracer(service string, opts ...Option) middleware {
 	cfg := defaultConfig()
 	for _, opt := range opts {
 		opt.apply(cfg)
 	}
 
 	tracer := cfg.provider.Tracer(tracerName, trace.WithInstrumentationVersion(SemVersion()))
-	return &Tracer{
+	return middleware{
 		service: service,
 		tracer:  tracer,
 		cfg:     cfg,
 	}
 }
 
-// Middleware is a convenience function that creates a new [Tracer] middleware instance
-// for the specified service and returns the Trace middleware function.
-// Options can be provided to configure the tracer.
-func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
-	tracer := New(service, opts...)
-	return tracer.Trace
-}
-
-// Trace is a middleware function that wraps the provided HandlerFunc with tracing capabilities.
-// It captures and records HTTP request information using OpenTelemetry.
-func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
+func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 	return func(c fox.Context) {
 
 		req := c.Request()
@@ -111,18 +108,24 @@ func (t *Tracer) Trace(next fox.HandlerFunc) fox.HandlerFunc {
 	}
 }
 
-func (t *Tracer) serverClientIP(c fox.Context) string {
-	if c.Route().ClientIPResolverEnabled() {
-		ipAddr, err := c.ClientIP()
+func (t middleware) serverClientIP(c fox.Context) string {
+	if t.cfg.resolver != nil {
+		ipAddr, err := t.cfg.resolver.ClientIP(c)
 		if err != nil {
 			return ""
 		}
 		return ipAddr.String()
 	}
 
-	ipAddr, err := t.cfg.resolver.ClientIP(c)
-	if err != nil {
-		return ""
+	ipAddr, err := c.ClientIP()
+	if err == nil {
+		return ipAddr.String()
 	}
-	return ipAddr.String()
+	if errors.Is(err, fox.ErrNoClientIPResolver) {
+		ipAddr, err = clientip.DefaultResolver.ClientIP(c)
+		if err == nil {
+			return ipAddr.String()
+		}
+	}
+	return ""
 }
