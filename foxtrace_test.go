@@ -51,14 +51,15 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
-	f, err := fox.New()
+	f, err := fox.New(
+		fox.WithMiddleware(Middleware("foobar", WithTracerProvider(provider))),
+	)
 	require.NoError(t, err)
-	mw := New("foobar", WithTracerProvider(provider))
-	_, err = f.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+	_, err = f.Handle(http.MethodGet, "/user/{id}", func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	}))
+	})
 
 	require.NoError(t, err)
 	f.ServeHTTP(w, r)
@@ -80,16 +81,48 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
 	b3.Inject(ctx, propagation.HeaderCarrier(r.Header))
 
-	f, err := fox.New()
+	f, err := fox.New(
+		fox.WithMiddleware(Middleware("foobar", WithTracerProvider(provider), WithPropagators(b3))),
+	)
 	require.NoError(t, err)
-	mw := New("foobar", WithTracerProvider(provider), WithPropagators(b3))
-	_, err = f.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+
+	_, err = f.Handle(http.MethodGet, "/user/{id}", func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	}))
+	})
 	require.NoError(t, err)
 	f.ServeHTTP(w, r)
+}
+
+func TestWithDefaultClientIPResolver(t *testing.T) {
+	provider := noop.NewTracerProvider()
+	otel.SetTextMapPropagator(b3prop.New())
+	r := httptest.NewRequest("GET", "/foo", nil)
+	r.Header.Set(fox.HeaderXForwardedFor, "25.13.12.11")
+	w := httptest.NewRecorder()
+
+	ctx := context.Background()
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: trace.TraceID{0x01},
+		SpanID:  trace.SpanID{0x01},
+	})
+	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
+
+	// Test with the default resolver
+	f, err := fox.New(
+		fox.WithMiddleware(Middleware("foobar", WithTracerProvider(provider))),
+	)
+	require.NoError(t, err)
+	_, err = f.Handle(http.MethodGet, "/bar", func(c fox.Context) {
+		t.Fail()
+	})
+	require.NoError(t, err)
+	assert.NotPanics(t, func() {
+		f.ServeHTTP(w, r)
+	})
 }
 
 func TestWithSpanAttributes(t *testing.T) {
@@ -108,24 +141,27 @@ func TestWithSpanAttributes(t *testing.T) {
 	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
-	f, err := fox.New()
+	f, err := fox.New(
+		fox.WithMiddleware(
+			Middleware("foobar", WithTracerProvider(provider), WithSpanAttributes(func(c fox.Context) []attribute.KeyValue {
+				attrs := make([]attribute.KeyValue, 1, 2)
+				attrs[0] = attribute.String("http.target", r.URL.String())
+				v := c.Route().Annotation("annotation")
+				attrs = append(attrs, attribute.KeyValue{
+					Key:   "annotation",
+					Value: attribute.StringValue(v.(string)),
+				})
+				return attrs
+			})),
+		),
+	)
 	require.NoError(t, err)
-	mw := New("foobar", WithTracerProvider(provider), WithSpanAttributes(func(c fox.Context) []attribute.KeyValue {
-		attrs := make([]attribute.KeyValue, 1, 2)
-		attrs[0] = attribute.String("http.target", r.URL.String())
-		v := c.Route().Annotation("annotation")
-		attrs = append(attrs, attribute.KeyValue{
-			Key:   "annotation",
-			Value: attribute.StringValue(v.(string)),
-		})
-		return attrs
-	}))
-	_, err = f.Handle(http.MethodGet, "/user/{id}", mw.Trace(func(c fox.Context) {
+	_, err = f.Handle(http.MethodGet, "/user/{id}", func(c fox.Context) {
 		span := trace.SpanFromContext(c.Request().Context())
 		assert.Equal(t, sc.TraceID(), span.SpanContext().TraceID())
 		assert.Equal(t, sc.SpanID(), span.SpanContext().SpanID())
-	}), fox.WithAnnotation("annotation", "foobar"))
-
+	}, fox.WithAnnotation("annotation", "foobar"))
 	require.NoError(t, err)
+
 	f.ServeHTTP(w, r)
 }

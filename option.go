@@ -2,7 +2,6 @@ package otelfox
 
 import (
 	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/fox/clientip"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -50,19 +49,6 @@ func defaultConfig() *config {
 		carrier: func(r *http.Request) propagation.TextMapCarrier {
 			return propagation.HeaderCarrier(r.Header)
 		},
-		resolver: clientip.NewChain(
-			must(clientip.NewLeftmostNonPrivate(clientip.XForwardedForKey, 15)),
-			must(clientip.NewLeftmostNonPrivate(clientip.ForwardedKey, 15)),
-			must(clientip.NewSingleIPHeader(fox.HeaderCFConnectionIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderTrueClientIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderFastClientIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderXAzureClientIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderXAzureSocketIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderXAppengineRemoteAddr)),
-			must(clientip.NewSingleIPHeader(fox.HeaderFlyClientIP)),
-			must(clientip.NewSingleIPHeader(fox.HeaderXRealIP)),
-			clientip.NewRemoteAddr(),
-		),
 	}
 }
 
@@ -127,18 +113,12 @@ func WithSpanAttributes(fn SpanAttributesFunc) Option {
 
 // WithClientIPResolver sets a custom resolver to determine the client IP address.
 // This is for advanced use case, must user should configure the resolver with Fox's router option using
-// [fox.WithClientIPResolver].
+// [fox.WithClientIPResolver]. Note that setting a resolver here takes priority over any resolver configured
+// globally or at the route level in Fox.
 func WithClientIPResolver(resolver fox.ClientIPResolver) Option {
 	return optionFunc(func(c *config) {
 		if resolver != nil {
 			c.resolver = resolver
 		}
 	})
-}
-
-func must(resolver fox.ClientIPResolver, err error) fox.ClientIPResolver {
-	if err != nil {
-		panic(err)
-	}
-	return resolver
 }
