@@ -67,7 +67,7 @@ func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 			attributes = append(attributes, t.cfg.attrsFn(c)...)
 		}
 
-		opts := make([]trace.SpanStartOption, 0, 4)
+		opts := make([]trace.SpanStartOption, 0, 5)
 		opts = append(
 			opts,
 			trace.WithAttributes(attributes...),
@@ -87,11 +87,17 @@ func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 		}
 
 		if spanName == "" {
-			spanName = fmt.Sprintf("HTTP %s route not found", req.Method)
-		} else {
-			opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
+			switch c.Scope() {
+			case fox.NoMethodHandler:
+				spanName = fmt.Sprintf("HTTP %s method not allowed", req.Method)
+			case fox.OptionsHandler:
+				spanName = fmt.Sprintf("HTTP %s route matched", req.Method)
+			default:
+				spanName = fmt.Sprintf("HTTP %s route not found", req.Method)
+			}
 		}
 
+		opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
