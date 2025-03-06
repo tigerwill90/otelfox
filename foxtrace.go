@@ -2,7 +2,6 @@ package otelfox
 
 import (
 	"errors"
-	"fmt"
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox/internal/clientip"
 	"github.com/tigerwill90/otelfox/internal/semconvutil"
@@ -67,7 +66,7 @@ func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 			attributes = append(attributes, t.cfg.attrsFn(c)...)
 		}
 
-		opts := make([]trace.SpanStartOption, 0, 4)
+		opts := make([]trace.SpanStartOption, 0, 5)
 		opts = append(
 			opts,
 			trace.WithAttributes(attributes...),
@@ -87,11 +86,10 @@ func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 		}
 
 		if spanName == "" {
-			spanName = fmt.Sprintf("HTTP %s route not found", req.Method)
-		} else {
-			opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
+			spanName = scopeToString(c.Scope())
 		}
 
+		opts = append(opts, trace.WithAttributes(semconv.HTTPRoute(spanName)))
 		ctx, span := t.tracer.Start(ctx, spanName, opts...)
 		defer span.End()
 
@@ -128,4 +126,21 @@ func (t middleware) serverClientIP(c fox.Context) string {
 		}
 	}
 	return ""
+}
+
+func scopeToString(scope fox.HandlerScope) string {
+	var strScope string
+	switch scope {
+	case fox.OptionsHandler:
+		strScope = "OptionsHandler"
+	case fox.NoMethodHandler:
+		strScope = "NoMethodHandler"
+	case fox.RedirectHandler:
+		strScope = "RedirectHandler"
+	case fox.NoRouteHandler:
+		strScope = "NoRouteHandler"
+	default:
+		strScope = "UnknownHandler"
+	}
+	return strScope
 }
