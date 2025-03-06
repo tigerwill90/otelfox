@@ -53,13 +53,12 @@ func (t middleware) trace(next fox.HandlerFunc) fox.HandlerFunc {
 			}
 		}
 
-		savedCtx := req.Context()
 		defer func() {
-			// rollback to the original context
-			c.SetRequest(req.WithContext(savedCtx))
+			// rollback to the original request
+			c.SetRequest(req)
 		}()
 
-		ctx := t.cfg.propagator.Extract(savedCtx, t.cfg.carrier(req))
+		ctx := t.cfg.propagator.Extract(req.Context(), t.cfg.carrier(req))
 
 		attributes := semconvutil.HTTPServerRequest(t.service, req)
 		if t.cfg.attrsFn != nil {
