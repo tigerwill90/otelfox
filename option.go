@@ -4,6 +4,7 @@ import (
 	"github.com/tigerwill90/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
@@ -19,8 +20,8 @@ func (o optionFunc) apply(c *config) {
 	o(c)
 }
 
-// Filter is a function that determines whether a given HTTP request should be traced.
-// It returns true to indicate the request should not be traced.
+// Filter is a predicate used to determine whether a given http.request should
+// be traced. A Filter must return true if the request should be traced.
 type Filter func(c fox.Context) bool
 
 // SpanNameFormatter is a function that formats the span name given the HTTP request.
@@ -35,6 +36,7 @@ type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
 type config struct {
 	provider   trace.TracerProvider
 	propagator propagation.TextMapPropagator
+	meter      metric.MeterProvider
 	resolver   fox.ClientIPResolver
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 	spanFmt    SpanNameFormatter
@@ -46,9 +48,11 @@ func defaultConfig() *config {
 	return &config{
 		provider:   otel.GetTracerProvider(),
 		propagator: otel.GetTextMapPropagator(),
+		meter:      otel.GetMeterProvider(),
 		carrier: func(r *http.Request) propagation.TextMapCarrier {
 			return propagation.HeaderCarrier(r.Header)
 		},
+		attrsFn: func(c fox.Context) []attribute.KeyValue { return nil },
 	}
 }
 
@@ -73,6 +77,14 @@ func WithTracerProvider(provider trace.TracerProvider) Option {
 	})
 }
 
+func WithMeterProvider(provider metric.MeterProvider) Option {
+	return optionFunc(func(c *config) {
+		if provider != nil {
+			c.meter = provider
+		}
+	})
+}
+
 // WithTextMapCarrier specify a carrier to use for extracting information from http request.
 // If none is specified, [propagation.HeaderCarrier] is used.
 func WithTextMapCarrier(fn func(r *http.Request) propagation.TextMapCarrier) Option {
@@ -91,10 +103,10 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 	})
 }
 
-// WithFilter appends the provided filters to the middleware's filter list.
-// A filter returning true will exclude the request from being traced. If no filters
-// are provided, all requests will be traced. Keep in mind that filters are invoked for each request,
-// so they should be simple and efficient.
+// WithFilter adds a filter to the list of filters used by the handler. If any filter indicates to exclude a request
+// then the request will not be traced. All filters must allow a request to be traced for a Span to be created.
+// If no filters are provided then all requests are traced. Filters will be invoked for each processed request,
+// it is advised to make them simple and fast.
 func WithFilter(f ...Filter) Option {
 	return optionFunc(func(c *config) {
 		c.filters = append(c.filters, f...)
@@ -107,7 +119,9 @@ func WithFilter(f ...Filter) Option {
 // the http.target attribute to the span.
 func WithSpanAttributes(fn SpanAttributesFunc) Option {
 	return optionFunc(func(c *config) {
-		c.attrsFn = fn
+		if fn != nil {
+			c.attrsFn = fn
+		}
 	})
 }
 

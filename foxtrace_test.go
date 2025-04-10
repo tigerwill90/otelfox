@@ -48,7 +48,7 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
@@ -78,7 +78,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	b3.Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
@@ -108,7 +108,7 @@ func TestWithDefaultClientIPResolver(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	// Test with the default resolver
@@ -138,7 +138,7 @@ func TestWithSpanAttributes(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
