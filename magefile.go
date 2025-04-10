@@ -74,6 +74,10 @@ func downloadFiles(dirKey string) error {
 		return fmt.Errorf("unknown directory key: %s", dirKey)
 	}
 
+	if err := os.RemoveAll(dirInfo.DestPath); err != nil {
+		fmt.Printf("Failed to delete target directory: %s", err)
+	}
+
 	if err := os.MkdirAll(dirInfo.DestPath, 0755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
