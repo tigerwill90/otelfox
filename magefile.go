@@ -99,7 +99,7 @@ func downloadFiles(dirKey string, ref string) error {
 	var baseURL string
 	var refType string
 
-	if isVersionTag(ref) {
+	if isTag(ref) {
 		baseURL = fmt.Sprintf(tagURLPattern, ref)
 		refType = "tag"
 	} else {
@@ -153,7 +153,7 @@ func ListTargetFiles(ref string) error {
 	var baseURL string
 	var refType string
 
-	if isVersionTag(ref) {
+	if isTag(ref) {
 		baseURL = fmt.Sprintf(tagURLPattern, ref)
 		refType = "tag"
 	} else {
@@ -181,8 +181,8 @@ func ListTargetFiles(ref string) error {
 	return nil
 }
 
-// isVersionTag checks if the string is a version tag (vX.Y.Z format)
-func isVersionTag(ref string) bool {
+// isTag checks if the string is a version tag (vX.Y.Z format)
+func isTag(ref string) bool {
 	matched, _ := regexp.MatchString(`^v\d+\.\d+\.\d+.*$`, ref)
 	return matched
 }
