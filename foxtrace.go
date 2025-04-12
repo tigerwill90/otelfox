@@ -15,6 +15,10 @@ const (
 	ScopeName = "github.com/tigerwill90/otelfox"
 )
 
+var (
+	DefaultClientIPResolver = clientip.DefaultResolver
+)
+
 // Middleware returns middleware that will trace incoming requests.
 // The service parameter should describe the name of the (virtual)
 // server handling the request.

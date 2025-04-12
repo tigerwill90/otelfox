@@ -67,8 +67,8 @@ func WithPropagators(propagators propagation.TextMapPropagator) Option {
 	})
 }
 
-// WithTracerProvider specifies a tracer provider to use for creating a tracer.
-// If none is specified, the global provider is used.
+// WithTracerProvider specifies a tracer provider to use for tracing http request.
+// If none is specified, the global tracer provider is used.
 func WithTracerProvider(provider trace.TracerProvider) Option {
 	return optionFunc(func(c *config) {
 		if provider != nil {
@@ -77,6 +77,8 @@ func WithTracerProvider(provider trace.TracerProvider) Option {
 	})
 }
 
+// WithMeterProvider specifies a meter provider to use for tracing http request.
+// If none is specified, the global meter provider is used.
 func WithMeterProvider(provider metric.MeterProvider) Option {
 	return optionFunc(func(c *config) {
 		if provider != nil {
