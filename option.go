@@ -28,10 +28,10 @@ type Filter func(c fox.Context) bool
 // This allows for dynamic naming of spans based on attributes of the request.
 type SpanNameFormatter func(c fox.Context) string
 
-// SpanAttributesFunc is a function type that can be used to dynamically
-// generate span attributes for a given HTTP request. It is used in
-// conjunction with the [WithSpanAttributes] middleware option.
-type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
+// MetricAttributesFunc is a function type that can be used to dynamically
+// generate metric attributes for a given HTTP request. It is used in
+// conjunction with the [WithMetricsAttributes] middleware option.
+type MetricAttributesFunc func(c fox.Context) []attribute.KeyValue
 
 type config struct {
 	provider   trace.TracerProvider
@@ -40,7 +40,7 @@ type config struct {
 	resolver   fox.ClientIPResolver
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 	spanFmt    SpanNameFormatter
-	attrsFn    SpanAttributesFunc
+	attrsFn    MetricAttributesFunc
 	filters    []Filter
 }
 
@@ -115,11 +115,10 @@ func WithFilter(f ...Filter) Option {
 	})
 }
 
-// WithSpanAttributes specifies a function for generating span attributes.
-// The function will be invoked for each request, and its return attributes
-// will be added to the span. For example, you can use this option to add
-// the http.target attribute to the span.
-func WithSpanAttributes(fn SpanAttributesFunc) Option {
+// WithMetricsAttributes specifies a function for generating metric attributes.
+// The function will be invoked for each request, and its returned attributes
+// will be added to the metric record.
+func WithMetricsAttributes(fn MetricAttributesFunc) Option {
 	return optionFunc(func(c *config) {
 		if fn != nil {
 			c.attrsFn = fn
