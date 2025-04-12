@@ -48,7 +48,7 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
@@ -78,7 +78,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	b3.Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
@@ -108,7 +108,7 @@ func TestWithDefaultClientIPResolver(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	// Test with the default resolver
@@ -125,7 +125,7 @@ func TestWithDefaultClientIPResolver(t *testing.T) {
 	})
 }
 
-func TestWithSpanAttributes(t *testing.T) {
+func TestWithMetricAttributes(t *testing.T) {
 	provider := noop.NewTracerProvider()
 	otel.SetTextMapPropagator(b3prop.New())
 
@@ -138,12 +138,12 @@ func TestWithSpanAttributes(t *testing.T) {
 		SpanID:  trace.SpanID{0x01},
 	})
 	ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-	ctx, _ = provider.Tracer(tracerName).Start(ctx, "test")
+	ctx, _ = provider.Tracer(ScopeName).Start(ctx, "test")
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(r.Header))
 
 	f, err := fox.New(
 		fox.WithMiddleware(
-			Middleware("foobar", WithTracerProvider(provider), WithSpanAttributes(func(c fox.Context) []attribute.KeyValue {
+			Middleware("foobar", WithTracerProvider(provider), WithMetricsAttributes(func(c fox.Context) []attribute.KeyValue {
 				attrs := make([]attribute.KeyValue, 1, 2)
 				attrs[0] = attribute.String("http.target", r.URL.String())
 				v := c.Route().Annotation("annotation")

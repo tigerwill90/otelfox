@@ -4,6 +4,7 @@ import (
 	"github.com/tigerwill90/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
@@ -19,26 +20,27 @@ func (o optionFunc) apply(c *config) {
 	o(c)
 }
 
-// Filter is a function that determines whether a given HTTP request should be traced.
-// It returns true to indicate the request should not be traced.
+// Filter is a predicate used to determine whether a given http.request should
+// be traced. A Filter must return true if the request should be traced.
 type Filter func(c fox.Context) bool
 
 // SpanNameFormatter is a function that formats the span name given the HTTP request.
 // This allows for dynamic naming of spans based on attributes of the request.
 type SpanNameFormatter func(c fox.Context) string
 
-// SpanAttributesFunc is a function type that can be used to dynamically
-// generate span attributes for a given HTTP request. It is used in
-// conjunction with the [WithSpanAttributes] middleware option.
-type SpanAttributesFunc func(c fox.Context) []attribute.KeyValue
+// MetricAttributesFunc is a function type that can be used to dynamically
+// generate metric attributes for a given HTTP request. It is used in
+// conjunction with the [WithMetricsAttributes] middleware option.
+type MetricAttributesFunc func(c fox.Context) []attribute.KeyValue
 
 type config struct {
 	provider   trace.TracerProvider
 	propagator propagation.TextMapPropagator
+	meter      metric.MeterProvider
 	resolver   fox.ClientIPResolver
 	carrier    func(r *http.Request) propagation.TextMapCarrier
 	spanFmt    SpanNameFormatter
-	attrsFn    SpanAttributesFunc
+	attrsFn    MetricAttributesFunc
 	filters    []Filter
 }
 
@@ -46,9 +48,11 @@ func defaultConfig() *config {
 	return &config{
 		provider:   otel.GetTracerProvider(),
 		propagator: otel.GetTextMapPropagator(),
+		meter:      otel.GetMeterProvider(),
 		carrier: func(r *http.Request) propagation.TextMapCarrier {
 			return propagation.HeaderCarrier(r.Header)
 		},
+		attrsFn: func(c fox.Context) []attribute.KeyValue { return nil },
 	}
 }
 
@@ -63,12 +67,22 @@ func WithPropagators(propagators propagation.TextMapPropagator) Option {
 	})
 }
 
-// WithTracerProvider specifies a tracer provider to use for creating a tracer.
-// If none is specified, the global provider is used.
+// WithTracerProvider specifies a tracer provider to use for tracing http request.
+// If none is specified, the global tracer provider is used.
 func WithTracerProvider(provider trace.TracerProvider) Option {
 	return optionFunc(func(c *config) {
 		if provider != nil {
 			c.provider = provider
+		}
+	})
+}
+
+// WithMeterProvider specifies a meter provider to use for tracing http request.
+// If none is specified, the global meter provider is used.
+func WithMeterProvider(provider metric.MeterProvider) Option {
+	return optionFunc(func(c *config) {
+		if provider != nil {
+			c.meter = provider
 		}
 	})
 }
@@ -91,30 +105,39 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 	})
 }
 
-// WithFilter appends the provided filters to the middleware's filter list.
-// A filter returning true will exclude the request from being traced. If no filters
-// are provided, all requests will be traced. Keep in mind that filters are invoked for each request,
-// so they should be simple and efficient.
+// WithFilter adds a filter to the list of filters used by the handler. If any filter indicates to exclude a request
+// then the request will not be traced. All filters must allow a request to be traced for a Span to be created.
+// If no filters are provided then all requests are traced. Filters will be invoked for each processed request,
+// it is advised to make them simple and fast.
 func WithFilter(f ...Filter) Option {
 	return optionFunc(func(c *config) {
 		c.filters = append(c.filters, f...)
 	})
 }
 
-// WithSpanAttributes specifies a function for generating span attributes.
-// The function will be invoked for each request, and its return attributes
-// will be added to the span. For example, you can use this option to add
-// the http.target attribute to the span.
-func WithSpanAttributes(fn SpanAttributesFunc) Option {
+// WithMetricsAttributes specifies a function for generating metric attributes.
+// The function will be invoked for each request, and its returned attributes
+// will be added to the metric record.
+func WithMetricsAttributes(fn MetricAttributesFunc) Option {
 	return optionFunc(func(c *config) {
-		c.attrsFn = fn
+		if fn != nil {
+			c.attrsFn = fn
+		}
 	})
 }
 
-// WithClientIPResolver sets a custom resolver to determine the client IP address.
-// This is for advanced use case, must user should configure the resolver with Fox's router option using
-// [fox.WithClientIPResolver]. Note that setting a resolver here takes priority over any resolver configured
-// globally or at the route level in Fox.
+// WithClientIPResolver sets a custom resolver to derive the client IP address.
+// This is for advanced use cases. Most users should configure the resolver with Fox's router option using
+// [fox.WithClientIPResolver] instead.
+//
+// Priority order for resolvers:
+// 1. Resolver set with this option (highest priority)
+// 2. Resolver configured at the route level in Fox
+// 3. Resolver configured globally in Fox
+// 4. If no resolver is configured anywhere, [DefaultClientIPResolver] is used as fallback
+//
+// Only use this option when you need different IP resolution logic specifically for OpenTelemetry
+// attributes than what's used by the rest of your application.
 func WithClientIPResolver(resolver fox.ClientIPResolver) Option {
 	return optionFunc(func(c *config) {
 		if resolver != nil {
