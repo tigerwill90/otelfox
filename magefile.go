@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // Whitelisted files for download
@@ -44,23 +45,36 @@ var filesMap = map[string]struct {
 }
 
 const (
-	baseURL = "https://raw.githubusercontent.com/open-telemetry/opentelemetry-go-contrib/main"
+	branchURLPattern = "https://raw.githubusercontent.com/open-telemetry/opentelemetry-go-contrib/refs/heads/%s"
+	tagURLPattern    = "https://raw.githubusercontent.com/open-telemetry/opentelemetry-go-contrib/refs/tags/%s"
 )
 
 // DownloadSemConv downloads files from semconv directory
-func DownloadSemConv() error {
-	return downloadFiles("semconv")
+// using the provided reference (tag or branch name)
+func DownloadSemConv(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("reference (tag or branch name) is required")
+	}
+	return downloadFiles("semconv", ref)
 }
 
 // DownloadSemConvUtil downloads files from semconvutil directory
-func DownloadSemConvUtil() error {
-	return downloadFiles("semconvutil")
+// using the provided reference (tag or branch name)
+func DownloadSemConvUtil(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("reference (tag or branch name) is required")
+	}
+	return downloadFiles("semconvutil", ref)
 }
 
 // DownloadAll downloads all files from both directories
-func DownloadAll() error {
+// using the provided reference (tag or branch name)
+func DownloadAll(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("reference (tag or branch name) is required")
+	}
 	for dir := range filesMap {
-		if err := downloadFiles(dir); err != nil {
+		if err := downloadFiles(dir, ref); err != nil {
 			return err
 		}
 	}
@@ -68,7 +82,7 @@ func DownloadAll() error {
 }
 
 // Helper function to download files
-func downloadFiles(dirKey string) error {
+func downloadFiles(dirKey string, ref string) error {
 	dirInfo, exists := filesMap[dirKey]
 	if !exists {
 		return fmt.Errorf("unknown directory key: %s", dirKey)
@@ -82,7 +96,18 @@ func downloadFiles(dirKey string) error {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
 
-	fmt.Printf("Downloading files from %s/%s\n", baseURL, dirInfo.SourcePath)
+	var baseURL string
+	var refType string
+
+	if isVersionTag(ref) {
+		baseURL = fmt.Sprintf(tagURLPattern, ref)
+		refType = "tag"
+	} else {
+		baseURL = fmt.Sprintf(branchURLPattern, ref)
+		refType = "branch"
+	}
+
+	fmt.Printf("Downloading files from %s/%s (%s: %s)\n", baseURL, dirInfo.SourcePath, refType, ref)
 
 	for _, file := range dirInfo.Files {
 		url := fmt.Sprintf("%s/%s/%s", baseURL, dirInfo.SourcePath, file)
@@ -117,11 +142,29 @@ func downloadFiles(dirKey string) error {
 }
 
 // ListTargetFiles lists all files that will be downloaded
-func ListTargetFiles() error {
+// for the provided reference (tag or branch name)
+func ListTargetFiles(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("reference (tag or branch name) is required")
+	}
+
 	totalFiles := 0
 
+	var baseURL string
+	var refType string
+
+	if isVersionTag(ref) {
+		baseURL = fmt.Sprintf(tagURLPattern, ref)
+		refType = "tag"
+	} else {
+		baseURL = fmt.Sprintf(branchURLPattern, ref)
+		refType = "branch"
+	}
+
+	sourceInfo := fmt.Sprintf("(%s: %s)", refType, ref)
+
 	for dirKey, dirInfo := range filesMap {
-		fmt.Printf("Files from %s to be downloaded from: %s/%s\n", dirKey, baseURL, dirInfo.SourcePath)
+		fmt.Printf("Files from %s to be downloaded from: %s/%s %s\n", dirKey, baseURL, dirInfo.SourcePath, sourceInfo)
 		fmt.Printf("Destination: %s\n", dirInfo.DestPath)
 		fmt.Println("=================================")
 
@@ -136,4 +179,10 @@ func ListTargetFiles() error {
 
 	fmt.Printf("Total files to be downloaded: %d\n", totalFiles)
 	return nil
+}
+
+// isVersionTag checks if the string is a version tag (vX.Y.Z format)
+func isVersionTag(ref string) bool {
+	matched, _ := regexp.MatchString(`^v\d+\.\d+\.\d+.*$`, ref)
+	return matched
 }
