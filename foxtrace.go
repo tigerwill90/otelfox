@@ -16,6 +16,23 @@ const (
 )
 
 var (
+	// DefaultClientIPResolver attempts to resolve client IP addresses in the following order:
+	// 1. Leftmost non-private IP in X-Forwarded-For header
+	// 2. Leftmost non-private IP in Forwarded header
+	// 3. X-Real-IP header
+	// 4. CF-Connecting-IP header
+	// 5. True-Client-IP header
+	// 6. Fastly-Client-IP header
+	// 7. X-Azure-ClientIP header
+	// 8. X-Appengine-Remote-Addr header
+	// 9. Fly-Client-IP header
+	// 10. X-Azure-SocketIP header
+	// 11. RemoteAddr from the request
+	//
+	// The DefaultClientIPResolver uses resolvers (particularly Leftmost in X-Forwarded-For
+	// and Forwarded headers) that are trivially spoofable by clients. For security-critical applications
+	// where IP addresses must be trusted, consider using a Rightmost resolver or implementing
+	// your own strategy tailored to your infrastructure.
 	DefaultClientIPResolver = clientip.DefaultResolver
 )
 

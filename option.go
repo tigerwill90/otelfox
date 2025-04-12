@@ -127,10 +127,18 @@ func WithSpanAttributes(fn SpanAttributesFunc) Option {
 	})
 }
 
-// WithClientIPResolver sets a custom resolver to determine the client IP address.
-// This is for advanced use case, must user should configure the resolver with Fox's router option using
-// [fox.WithClientIPResolver]. Note that setting a resolver here takes priority over any resolver configured
-// globally or at the route level in Fox.
+// WithClientIPResolver sets a custom resolver to derive the client IP address.
+// This is for advanced use cases. Most users should configure the resolver with Fox's router option using
+// [fox.WithClientIPResolver] instead.
+//
+// Priority order for resolvers:
+// 1. Resolver set with this option (highest priority)
+// 2. Resolver configured at the route level in Fox
+// 3. Resolver configured globally in Fox
+// 4. If no resolver is configured anywhere, [DefaultClientIPResolver] is used as fallback
+//
+// Only use this option when you need different IP resolution logic specifically for OpenTelemetry
+// attributes than what's used by the rest of your application.
 func WithClientIPResolver(resolver fox.ClientIPResolver) Option {
 	return optionFunc(func(c *config) {
 		if resolver != nil {
