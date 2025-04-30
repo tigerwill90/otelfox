@@ -2,9 +2,11 @@ package otelfox
 
 import (
 	"errors"
+	"fmt"
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox/internal/clientip"
 	"github.com/tigerwill90/otelfox/internal/semconv"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"time"
@@ -75,18 +77,14 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 			}
 
 			opts := []oteltrace.SpanStartOption{
-				oteltrace.WithAttributes(hs.RequestTraceAttrs(service, c.Request(), requestTraceAttrOpts)...),
+				oteltrace.WithAttributes(hs.RequestTraceAttrs(service, req, requestTraceAttrOpts)...),
 				oteltrace.WithAttributes(hs.Route(c.Pattern())),
 				oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 			}
-			var spanName string
-			if cfg.spanFmt == nil {
-				spanName = c.Pattern()
-			} else {
-				spanName = cfg.spanFmt(c)
-			}
+
+			spanName := cfg.spanFmt(c)
 			if spanName == "" {
-				spanName = scopeToString(c.Scope())
+				spanName = fmt.Sprintf("HTTP %s route not found", req.Method)
 			}
 
 			ctx, span := tracer.Start(ctx, spanName, opts...)
@@ -103,7 +101,14 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 				span.SetAttributes(semconv.HTTPStatusCode(status))
 			}
 
-			additionalAttributes := cfg.attrsFn(c)
+			// Record the server-side attributes.
+			var additionalAttributes []attribute.KeyValue
+			if pattern := c.Pattern(); pattern != "" {
+				additionalAttributes = []attribute.KeyValue{sc.Route(pattern)}
+			}
+			if cfg.attrsFn != nil {
+				additionalAttributes = append(additionalAttributes, cfg.attrsFn(c)...)
+			}
 			sc.RecordMetrics(ctx, semconv.ServerMetricData{
 				ServerName:   service,
 				ResponseSize: int64(c.Writer().Size()),
