@@ -63,6 +63,7 @@ type config struct {
 	spanFmt    SpanNameFormatter
 	attrsFn    MetricAttributesFunc
 	filters    []Filter
+	spanOpts   []trace.SpanStartOption
 }
 
 func defaultConfig() *config {
@@ -136,6 +137,13 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 func WithFilter(f ...Filter) Option {
 	return optionFunc(func(c *config) {
 		c.filters = append(c.filters, f...)
+	})
+}
+
+// WithSpanStartOptions configures an additional set of trace.SpanStartOptions, which are applied to each new span.
+func WithSpanStartOptions(opts ...trace.SpanStartOption) Option {
+	return optionFunc(func(c *config) {
+		c.spanOpts = append(c.spanOpts, opts...)
 	})
 }
 

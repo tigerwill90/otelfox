@@ -51,7 +51,6 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 	meter := cfg.meter.Meter(ScopeName, metric.WithInstrumentationVersion(Version()))
 
 	sc := semconv.NewHTTPServer(meter)
-	var hs semconv.HTTPServer
 
 	return func(next fox.HandlerFunc) fox.HandlerFunc {
 		return func(c fox.Context) {
@@ -77,10 +76,12 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 			}
 
 			opts := []oteltrace.SpanStartOption{
-				oteltrace.WithAttributes(hs.RequestTraceAttrs(service, req, requestTraceAttrOpts)...),
-				oteltrace.WithAttributes(hs.Route(c.Pattern())),
+				oteltrace.WithAttributes(sc.RequestTraceAttrs(service, req, requestTraceAttrOpts)...),
+				oteltrace.WithAttributes(sc.Route(c.Pattern())),
 				oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 			}
+
+			opts = append(opts, cfg.spanOpts...)
 
 			spanName := cfg.spanFmt(c)
 			if spanName == "" {
@@ -96,7 +97,7 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 			next(c)
 
 			status := c.Writer().Status()
-			span.SetStatus(hs.Status(status))
+			span.SetStatus(sc.Status(status))
 			if status > 0 {
 				span.SetAttributes(semconv.HTTPStatusCode(status))
 			}
