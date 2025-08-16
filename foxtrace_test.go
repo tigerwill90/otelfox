@@ -2,6 +2,10 @@ package otelfox
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tigerwill90/fox"
@@ -10,9 +14,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 
 	b3prop "go.opentelemetry.io/contrib/propagators/b3"
 )

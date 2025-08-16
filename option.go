@@ -1,15 +1,16 @@
 package otelfox
 
 import (
+	"net/http"
+	"slices"
+	"strings"
+
 	"github.com/tigerwill90/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
-	"slices"
-	"strings"
 )
 
 var defaultSpanNameFormatter SpanNameFormatter = func(c fox.Context) string {

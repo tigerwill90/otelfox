@@ -3,13 +3,14 @@ package otelfox
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox/internal/clientip"
 	"github.com/tigerwill90/otelfox/internal/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"time"
 )
 
 const (
@@ -98,9 +99,10 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 
 			status := c.Writer().Status()
 			span.SetStatus(sc.Status(status))
-			if status > 0 {
-				span.SetAttributes(semconv.HTTPStatusCode(status))
-			}
+			span.SetAttributes(sc.ResponseTraceAttrs(semconv.ResponseTelemetry{
+				StatusCode: status,
+				WriteBytes: int64(c.Writer().Size()),
+			})...)
 
 			// Record the server-side attributes.
 			var additionalAttributes []attribute.KeyValue
@@ -156,8 +158,10 @@ func scopeToString(scope fox.HandlerScope) string {
 		strScope = "OptionsHandler"
 	case fox.NoMethodHandler:
 		strScope = "NoMethodHandler"
-	case fox.RedirectHandler:
-		strScope = "RedirectHandler"
+	case fox.RedirectSlashHandler:
+		strScope = "RedirectSlashHandler"
+	case fox.RedirectPathHandler:
+		strScope = "RedirectPathHandler"
 	case fox.NoRouteHandler:
 		strScope = "NoRouteHandler"
 	default:
