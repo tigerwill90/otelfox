@@ -1,14 +1,36 @@
 package otelfox
 
 import (
+	"net/http"
+	"slices"
+	"strings"
+
 	"github.com/tigerwill90/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
 )
+
+var defaultSpanNameFormatter SpanNameFormatter = func(c fox.Context) string {
+	method := strings.ToUpper(c.Request().Method)
+	if !slices.Contains([]string{
+		http.MethodGet, http.MethodHead,
+		http.MethodPost, http.MethodPut,
+		http.MethodPatch, http.MethodDelete,
+		http.MethodConnect, http.MethodOptions,
+		http.MethodTrace,
+	}, method) {
+		method = "HTTP"
+	}
+
+	if path := c.Pattern(); path != "" {
+		return method + " " + path
+	}
+
+	return method + " " + scopeToString(c.Scope())
+}
 
 type Option interface {
 	apply(*config)
@@ -42,6 +64,7 @@ type config struct {
 	spanFmt    SpanNameFormatter
 	attrsFn    MetricAttributesFunc
 	filters    []Filter
+	spanOpts   []trace.SpanStartOption
 }
 
 func defaultConfig() *config {
@@ -53,6 +76,7 @@ func defaultConfig() *config {
 			return propagation.HeaderCarrier(r.Header)
 		},
 		attrsFn: func(c fox.Context) []attribute.KeyValue { return nil },
+		spanFmt: defaultSpanNameFormatter,
 	}
 }
 
@@ -101,7 +125,9 @@ func WithTextMapCarrier(fn func(r *http.Request) propagation.TextMapCarrier) Opt
 // and the returned string will become the Span Name.
 func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 	return optionFunc(func(c *config) {
-		c.spanFmt = fn
+		if fn != nil {
+			c.spanFmt = fn
+		}
 	})
 }
 
@@ -112,6 +138,13 @@ func WithSpanNameFormatter(fn SpanNameFormatter) Option {
 func WithFilter(f ...Filter) Option {
 	return optionFunc(func(c *config) {
 		c.filters = append(c.filters, f...)
+	})
+}
+
+// WithSpanStartOptions configures an additional set of trace.SpanStartOptions, which are applied to each new span.
+func WithSpanStartOptions(opts ...trace.SpanStartOption) Option {
+	return optionFunc(func(c *config) {
+		c.spanOpts = append(c.spanOpts, opts...)
 	})
 }
 

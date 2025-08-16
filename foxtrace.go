@@ -2,12 +2,15 @@ package otelfox
 
 import (
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/otelfox/internal/clientip"
 	"github.com/tigerwill90/otelfox/internal/semconv"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"time"
 )
 
 const (
@@ -49,7 +52,6 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 	meter := cfg.meter.Meter(ScopeName, metric.WithInstrumentationVersion(Version()))
 
 	sc := semconv.NewHTTPServer(meter)
-	var hs semconv.HTTPServer
 
 	return func(next fox.HandlerFunc) fox.HandlerFunc {
 		return func(c fox.Context) {
@@ -75,18 +77,16 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 			}
 
 			opts := []oteltrace.SpanStartOption{
-				oteltrace.WithAttributes(hs.RequestTraceAttrs(service, c.Request(), requestTraceAttrOpts)...),
-				oteltrace.WithAttributes(hs.Route(c.Pattern())),
+				oteltrace.WithAttributes(sc.RequestTraceAttrs(service, req, requestTraceAttrOpts)...),
+				oteltrace.WithAttributes(sc.Route(c.Pattern())),
 				oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 			}
-			var spanName string
-			if cfg.spanFmt == nil {
-				spanName = c.Pattern()
-			} else {
-				spanName = cfg.spanFmt(c)
-			}
+
+			opts = append(opts, cfg.spanOpts...)
+
+			spanName := cfg.spanFmt(c)
 			if spanName == "" {
-				spanName = scopeToString(c.Scope())
+				spanName = fmt.Sprintf("HTTP %s route not found", req.Method)
 			}
 
 			ctx, span := tracer.Start(ctx, spanName, opts...)
@@ -98,12 +98,20 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 			next(c)
 
 			status := c.Writer().Status()
-			span.SetStatus(hs.Status(status))
-			if status > 0 {
-				span.SetAttributes(semconv.HTTPStatusCode(status))
-			}
+			span.SetStatus(sc.Status(status))
+			span.SetAttributes(sc.ResponseTraceAttrs(semconv.ResponseTelemetry{
+				StatusCode: status,
+				WriteBytes: int64(c.Writer().Size()),
+			})...)
 
-			additionalAttributes := cfg.attrsFn(c)
+			// Record the server-side attributes.
+			var additionalAttributes []attribute.KeyValue
+			if pattern := c.Pattern(); pattern != "" {
+				additionalAttributes = []attribute.KeyValue{sc.Route(pattern)}
+			}
+			if cfg.attrsFn != nil {
+				additionalAttributes = append(additionalAttributes, cfg.attrsFn(c)...)
+			}
 			sc.RecordMetrics(ctx, semconv.ServerMetricData{
 				ServerName:   service,
 				ResponseSize: int64(c.Writer().Size()),
@@ -150,8 +158,10 @@ func scopeToString(scope fox.HandlerScope) string {
 		strScope = "OptionsHandler"
 	case fox.NoMethodHandler:
 		strScope = "NoMethodHandler"
-	case fox.RedirectHandler:
-		strScope = "RedirectHandler"
+	case fox.RedirectSlashHandler:
+		strScope = "RedirectSlashHandler"
+	case fox.RedirectPathHandler:
+		strScope = "RedirectPathHandler"
 	case fox.NoRouteHandler:
 		strScope = "NoRouteHandler"
 	default:

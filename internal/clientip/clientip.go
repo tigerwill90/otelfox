@@ -1,9 +1,10 @@
 package clientip
 
 import (
+	"net"
+
 	"github.com/tigerwill90/fox"
 	"github.com/tigerwill90/fox/clientip"
-	"net"
 )
 
 var DefaultResolver = newChain(

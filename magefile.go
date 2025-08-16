@@ -141,46 +141,6 @@ func downloadFiles(dirKey string, ref string) error {
 	return nil
 }
 
-// ListTargetFiles lists all files that will be downloaded
-// for the provided reference (tag or branch name)
-func ListTargetFiles(ref string) error {
-	if ref == "" {
-		return fmt.Errorf("reference (tag or branch name) is required")
-	}
-
-	totalFiles := 0
-
-	var baseURL string
-	var refType string
-
-	if isTag(ref) {
-		baseURL = fmt.Sprintf(tagURLPattern, ref)
-		refType = "tag"
-	} else {
-		baseURL = fmt.Sprintf(branchURLPattern, ref)
-		refType = "branch"
-	}
-
-	sourceInfo := fmt.Sprintf("(%s: %s)", refType, ref)
-
-	for dirKey, dirInfo := range filesMap {
-		fmt.Printf("Files from %s to be downloaded from: %s/%s %s\n", dirKey, baseURL, dirInfo.SourcePath, sourceInfo)
-		fmt.Printf("Destination: %s\n", dirInfo.DestPath)
-		fmt.Println("=================================")
-
-		for _, file := range dirInfo.Files {
-			fmt.Println(file)
-		}
-
-		fmt.Printf("Total files in %s: %d\n", dirKey, len(dirInfo.Files))
-		totalFiles += len(dirInfo.Files)
-		fmt.Println("=================================")
-	}
-
-	fmt.Printf("Total files to be downloaded: %d\n", totalFiles)
-	return nil
-}
-
 // isTag checks if the string is a version tag (vX.Y.Z format)
 func isTag(ref string) bool {
 	matched, _ := regexp.MatchString(`^v\d+\.\d+\.\d+.*$`, ref)
