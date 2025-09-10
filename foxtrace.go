@@ -27,13 +27,13 @@ var (
 	// 5. True-Client-IP header
 	// 6. Fastly-Client-IP header
 	// 7. X-Azure-ClientIP header
-	// 8. X-Appengine-Remote-Addr header
-	// 9. Fly-Client-IP header
-	// 10. X-Azure-SocketIP header
+	// 8. X-Azure-SocketIP header
+	// 9. X-Appengine-Remote-Addr header
+	// 10. Fly-Client-IP header
 	// 11. RemoteAddr from the request
 	//
-	// The DefaultClientIPResolver uses resolvers (particularly Leftmost in X-Forwarded-For
-	// and Forwarded headers) that are trivially spoofable by clients. For security-critical applications
+	// The DefaultClientIPResolver uses resolvers (particularly Leftmost in X-Forwarded-For/Forwarded headers,
+	// and X-Azure-ClientIP) that are trivially spoofable by clients. For security-critical applications
 	// where IP addresses must be trusted, consider using a Rightmost resolver or implementing
 	// your own strategy tailored to your infrastructure.
 	DefaultClientIPResolver = clientip.DefaultResolver

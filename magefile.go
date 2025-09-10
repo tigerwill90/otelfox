@@ -21,26 +21,17 @@ var filesMap = map[string]struct {
 	"semconv": {
 		Files: []string{
 			"bench_test.go.tmpl",
+			"common_test.go.tmpl",
 			"env.go.tmpl",
 			"env_test.go.tmpl",
 			"httpconv.go.tmpl",
 			"httpconv_test.go.tmpl",
+			"httpconvtest_test.go.tmpl",
 			"util.go.tmpl",
 			"util_test.go.tmpl",
-			"v1.20.0.go.tmpl",
 		},
 		SourcePath: "internal/shared/semconv",
 		DestPath:   "internal/shared/semconv",
-	},
-	"semconvutil": {
-		Files: []string{
-			"httpconv.go.tmpl",
-			"httpconv_test.go.tmpl",
-			"netconv.go.tmpl",
-			"netconv_test.go.tmpl",
-		},
-		SourcePath: "internal/shared/semconvutil",
-		DestPath:   "internal/shared/semconvutil",
 	},
 }
 
