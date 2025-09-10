@@ -1,5 +1,5 @@
 package otelfox
 
 func Version() string {
-	return "0.60.0"
+	return "0.63.0"
 }

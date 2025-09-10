@@ -15,9 +15,9 @@ var DefaultResolver = newChain(
 	must(clientip.NewSingleIPHeader(fox.HeaderTrueClientIP)),
 	must(clientip.NewSingleIPHeader(fox.HeaderFastClientIP)),
 	must(clientip.NewSingleIPHeader(fox.HeaderXAzureClientIP)),
+	must(clientip.NewSingleIPHeader(fox.HeaderXAzureSocketIP)),
 	must(clientip.NewSingleIPHeader(fox.HeaderXAppengineRemoteAddr)),
 	must(clientip.NewSingleIPHeader(fox.HeaderFlyClientIP)),
-	must(clientip.NewSingleIPHeader(fox.HeaderXAzureSocketIP)),
 	clientip.NewRemoteAddr(),
 )
 

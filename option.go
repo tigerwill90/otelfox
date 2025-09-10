@@ -167,7 +167,7 @@ func WithMetricsAttributes(fn MetricAttributesFunc) Option {
 // 1. Resolver set with this option (highest priority)
 // 2. Resolver configured at the route level in Fox
 // 3. Resolver configured globally in Fox
-// 4. If no resolver is configured anywhere, [DefaultClientIPResolver] is used as fallback
+// 4. If no resolver is configured anywhere, [DefaultClientIPResolver] is used as fallback.
 //
 // Only use this option when you need different IP resolution logic specifically for OpenTelemetry
 // attributes than what's used by the rest of your application.
