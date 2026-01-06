@@ -30,7 +30,7 @@ func newChain(resolvers ...fox.ClientIPResolver) chain {
 }
 
 // ClientIP try to derive the client IP using this resolver chain.
-func (s chain) ClientIP(c fox.Context) (*net.IPAddr, error) {
+func (s chain) ClientIP(c *fox.Context) (*net.IPAddr, error) {
 	var lastErr error
 	for _, sub := range s.resolvers {
 		ipAddr, err := sub.ClientIP(c)

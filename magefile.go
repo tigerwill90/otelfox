@@ -21,12 +21,14 @@ var filesMap = map[string]struct {
 	"semconv": {
 		Files: []string{
 			"bench_test.go.tmpl",
+			"client.go.tmpl",
+			"client_test.go.tmpl",
 			"common_test.go.tmpl",
-			"env.go.tmpl",
-			"env_test.go.tmpl",
-			"httpconv.go.tmpl",
-			"httpconv_test.go.tmpl",
+			//"env.go.tmpl",
+			//"httpconv.go.tmpl",
 			"httpconvtest_test.go.tmpl",
+			"server.go.tmpl",
+			"server_test.go.tmpl",
 			"util.go.tmpl",
 			"util_test.go.tmpl",
 		},
