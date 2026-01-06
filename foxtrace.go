@@ -54,7 +54,7 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 	sc := semconv.NewHTTPServer(meter)
 
 	return func(next fox.HandlerFunc) fox.HandlerFunc {
-		return func(c fox.Context) {
+		return func(c *fox.Context) {
 			requestStartTime := time.Now()
 
 			req := c.Request()
@@ -129,7 +129,7 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 	}
 }
 
-func serverClientIP(c fox.Context, resolver fox.ClientIPResolver) string {
+func serverClientIP(c *fox.Context, resolver fox.ClientIPResolver) string {
 	if resolver != nil {
 		ipAddr, err := resolver.ClientIP(c)
 		if err != nil {

@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var defaultSpanNameFormatter SpanNameFormatter = func(c fox.Context) string {
+var defaultSpanNameFormatter SpanNameFormatter = func(c *fox.Context) string {
 	method := strings.ToUpper(c.Request().Method)
 	if !slices.Contains([]string{
 		http.MethodGet, http.MethodHead,
@@ -44,16 +44,16 @@ func (o optionFunc) apply(c *config) {
 
 // Filter is a predicate used to determine whether a given http.request should
 // be traced. A Filter must return true if the request should be traced.
-type Filter func(c fox.Context) bool
+type Filter func(c *fox.Context) bool
 
 // SpanNameFormatter is a function that formats the span name given the HTTP request.
 // This allows for dynamic naming of spans based on attributes of the request.
-type SpanNameFormatter func(c fox.Context) string
+type SpanNameFormatter func(c *fox.Context) string
 
 // MetricAttributesFunc is a function type that can be used to dynamically
 // generate metric attributes for a given HTTP request. It is used in
 // conjunction with the [WithMetricsAttributes] middleware option.
-type MetricAttributesFunc func(c fox.Context) []attribute.KeyValue
+type MetricAttributesFunc func(c *fox.Context) []attribute.KeyValue
 
 type config struct {
 	provider   trace.TracerProvider
@@ -75,7 +75,7 @@ func defaultConfig() *config {
 		carrier: func(r *http.Request) propagation.TextMapCarrier {
 			return propagation.HeaderCarrier(r.Header)
 		},
-		attrsFn: func(c fox.Context) []attribute.KeyValue { return nil },
+		attrsFn: func(c *fox.Context) []attribute.KeyValue { return nil },
 		spanFmt: defaultSpanNameFormatter,
 	}
 }

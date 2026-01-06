@@ -31,25 +31,24 @@ package main
 
 import (
 	"errors"
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/otelfox"
+	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/otelfox"
 )
 
 func main() {
-	f, err := fox.New(
+	f := fox.MustRouter(
 		fox.WithMiddleware(otelfox.Middleware("fox")),
 	)
-	if err != nil {
-		panic(err)
-	}
 
-	f.MustHandle(http.MethodGet, "/hello/{name}", func(c fox.Context) {
-		_ = c.String(http.StatusOK, "hello %s\n", c.Param("name"))
+	f.MustAdd(fox.MethodGet, "/hello/{name}", func(c *fox.Context) {
+		_ = c.String(http.StatusOK, fmt.Sprintf("hello %s\n", c.Param("name")))
 	})
 
-	if err = http.ListenAndServe(":8080", f); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := http.ListenAndServe(":8080", f); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalln(err)
 	}
 }
