@@ -1,7 +1,6 @@
 package otelfox
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -130,23 +129,22 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 }
 
 func serverClientIP(c *fox.Context, resolver fox.ClientIPResolver) string {
+	// Try custom resolver first if provided
 	if resolver != nil {
-		ipAddr, err := resolver.ClientIP(c)
-		if err != nil {
-			return ""
-		}
-		return ipAddr.String()
-	}
-
-	ipAddr, err := c.ClientIP()
-	if err == nil {
-		return ipAddr.String()
-	}
-	if errors.Is(err, fox.ErrNoClientIPResolver) {
-		ipAddr, err = clientip.DefaultResolver.ClientIP(c)
-		if err == nil {
+		if ipAddr, err := resolver.ClientIP(c); err == nil {
 			return ipAddr.String()
 		}
+	} else {
+		// Try router's configured resolver
+		if ipAddr, err := c.ClientIP(); err == nil {
+			return ipAddr.String()
+		}
+	}
+
+	// Fall back to DefaultResolver which is safer than relying on semconv's
+	// leftmost XFF extraction.
+	if ipAddr, err := clientip.DefaultResolver.ClientIP(c); err == nil {
+		return ipAddr.String()
 	}
 	return ""
 }
