@@ -103,34 +103,42 @@ func downloadFiles(dirKey string, ref string) error {
 	fmt.Printf("Downloading files from %s/%s (%s: %s)\n", baseURL, dirInfo.SourcePath, refType, ref)
 
 	for _, file := range dirInfo.Files {
-		url := fmt.Sprintf("%s/%s/%s", baseURL, dirInfo.SourcePath, file)
-		targetPath := filepath.Join(dirInfo.DestPath, file)
-
-		fmt.Printf("Downloading %s to %s\n", url, targetPath)
-
-		resp, err := http.Get(url)
-		if err != nil {
-			return fmt.Errorf("failed to download %s: %w", file, err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("received non-200 response code: %d for %s", resp.StatusCode, url)
-		}
-
-		out, err := os.Create(targetPath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", targetPath, err)
-		}
-		defer out.Close()
-
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to write to file %s: %w", targetPath, err)
+		if err := downloadFile(baseURL, dirInfo.SourcePath, dirInfo.DestPath, file); err != nil {
+			return err
 		}
 	}
 
 	fmt.Printf("Successfully downloaded all files from %s\n", dirInfo.SourcePath)
+	return nil
+}
+
+func downloadFile(baseURL, sourcePath, destPath, file string) error {
+	url := fmt.Sprintf("%s/%s/%s", baseURL, sourcePath, file)
+	targetPath := filepath.Join(destPath, file)
+
+	fmt.Printf("Downloading %s to %s\n", url, targetPath)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to download %s: %w", file, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received non-200 response code: %d for %s", resp.StatusCode, url)
+	}
+
+	out, err := os.Create(targetPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", targetPath, err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", targetPath, err)
+	}
+
 	return nil
 }
 
