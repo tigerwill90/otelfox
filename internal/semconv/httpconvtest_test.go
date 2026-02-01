@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tigerwill90/otelfox/internal/semconv"
+	"github.com/fox-toolkit/oteltracing/internal/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -342,7 +342,7 @@ func TestRequestErrorType(t *testing.T) {
 		want attribute.KeyValue
 	}{
 		{err: errors.New("http: nil Request.URL"), want: attribute.String("error.type", "*errors.errorString")},
-		{err: customError{}, want: attribute.String("error.type", "github.com/tigerwill90/otelfox/internal/semconv_test.customError")},
+		{err: customError{}, want: attribute.String("error.type", "github.com/fox-toolkit/oteltracing/internal/semconv_test.customError")},
 	}
 
 	for _, tt := range testcases {

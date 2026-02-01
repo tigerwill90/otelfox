@@ -1,22 +1,22 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/tigerwill90/otelfox.svg)](https://pkg.go.dev/github.com/tigerwill90/otelfox)
-[![tests](https://github.com/tigerwill90/otelfox/actions/workflows/tests.yaml/badge.svg)](https://github.com/tigerwill90/otelfox/actions?query=workflow%3Atests)
-[![Go Report Card](https://goreportcard.com/badge/github.com/tigerwill90/otelfox)](https://goreportcard.com/report/github.com/tigerwill90/otelfox)
-[![codecov](https://codecov.io/gh/tigerwill90/otelfox/branch/master/graph/badge.svg?token=D6qSTlzEcE)](https://codecov.io/gh/tigerwill90/otelfox)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tigerwill90/otelfox)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/tigerwill90/otelfox)
-# Otelfox
+[![Go Reference](https://pkg.go.dev/badge/github.com/fox-toolkit/oteltracing.svg)](https://pkg.go.dev/github.com/fox-toolkit/oteltracing)
+[![tests](https://github.com/fox-toolkit/oteltracing/actions/workflows/tests.yaml/badge.svg)](https://github.com/fox-toolkit/oteltracing/actions?query=workflow%3Atests)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fox-toolkit/oteltracing)](https://goreportcard.com/report/github.com/fox-toolkit/oteltracing)
+[![codecov](https://codecov.io/gh/fox-toolkit/oteltracing/branch/master/graph/badge.svg?token=D6qSTlzEcE)](https://codecov.io/gh/fox-toolkit/oteltracing)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/fox-toolkit/oteltracing)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/fox-toolkit/oteltracing)
+# oteltracing
 
-Otelfox is a middleware for [Fox](https://github.com/tigerwill90/fox) that provides distributed 
+oteltracing is a middleware for [Fox](https://github.com/fox-toolkit/fox) that provides distributed 
 tracing using [OpenTelemetry](https://opentelemetry.io/).
 
 ## Disclaimer
-Otelfox's API is linked to Fox router, and it will only reach v1 when the router is stabilized.
+oteltracing's API is linked to Fox router, and it will only reach v1 when the router is stabilized.
 During the pre-v1 phase, breaking changes may occur and will be documented in the release notes.
 
 ## Getting started
 ### Installation
 ````shell
-go get -u github.com/tigerwill90/otelfox
+go get -u github.com/fox-toolkit/oteltracing
 ````
 
 ### Features
@@ -35,13 +35,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/otelfox"
+	"github.com/fox-toolkit/fox"
+	"github.com/fox-toolkit/oteltracing"
 )
 
 func main() {
 	f := fox.MustRouter(
-		fox.WithMiddleware(otelfox.Middleware("fox")),
+		fox.WithMiddleware(oteltracing.Middleware("fox")),
 	)
 
 	f.MustAdd(fox.MethodGet, "/hello/{name}", func(c *fox.Context) {

@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    name: Test Otelfox
+    name: Test Oteltracing
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,11 +24,14 @@ jobs:
         run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
-          flags: coverage.txt
+          fail_ci_if_error: true
+          files: ./coverage.txt
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   lint:
-    name: Lint Otelfox
+    name: Lint Oteltracing
     runs-on: ubuntu-latest
     strategy:
       matrix:

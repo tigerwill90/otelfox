@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tigerwill90/otelfox/internal/semconv"
+	"github.com/fox-toolkit/oteltracing/internal/semconv"
 	"go.opentelemetry.io/otel/attribute"
 )
 

@@ -1,11 +1,11 @@
-package otelfox
+package oteltracing
 
 import (
 	"net/http"
 	"slices"
 	"strings"
 
-	"github.com/tigerwill90/fox"
+	"github.com/fox-toolkit/fox"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -29,7 +29,7 @@ var defaultSpanNameFormatter SpanNameFormatter = func(c *fox.Context) string {
 		return method + " " + path
 	}
 
-	return method + " " + scopeToString(c.Scope())
+	return method
 }
 
 type Option interface {

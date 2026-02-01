@@ -3,8 +3,8 @@ package clientip
 import (
 	"net"
 
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/fox/clientip"
+	"github.com/fox-toolkit/fox"
+	"github.com/fox-toolkit/fox/clientip"
 )
 
 var DefaultResolver = newChain(

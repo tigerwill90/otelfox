@@ -1,12 +1,12 @@
-package otelfox
+package oteltracing
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/otelfox/internal/clientip"
-	"github.com/tigerwill90/otelfox/internal/semconv"
+	"github.com/fox-toolkit/fox"
+	"github.com/fox-toolkit/oteltracing/internal/clientip"
+	"github.com/fox-toolkit/oteltracing/internal/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -14,7 +14,7 @@ import (
 
 const (
 	// ScopeName is the instrumentation scope name.
-	ScopeName = "github.com/tigerwill90/otelfox"
+	ScopeName = "github.com/fox-toolkit/oteltracing"
 )
 
 var (
@@ -147,23 +147,4 @@ func serverClientIP(c *fox.Context, resolver fox.ClientIPResolver) string {
 		return ipAddr.String()
 	}
 	return ""
-}
-
-func scopeToString(scope fox.HandlerScope) string {
-	var strScope string
-	switch scope {
-	case fox.OptionsHandler:
-		strScope = "OptionsHandler"
-	case fox.NoMethodHandler:
-		strScope = "NoMethodHandler"
-	case fox.RedirectSlashHandler:
-		strScope = "RedirectSlashHandler"
-	case fox.RedirectPathHandler:
-		strScope = "RedirectPathHandler"
-	case fox.NoRouteHandler:
-		strScope = "NoRouteHandler"
-	default:
-		strScope = "UnknownHandler"
-	}
-	return strScope
 }

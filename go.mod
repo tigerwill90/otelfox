@@ -1,12 +1,12 @@
-module github.com/tigerwill90/otelfox
+module github.com/fox-toolkit/oteltracing
 
 go 1.24.0
 
 toolchain go1.24.2
 
 require (
+	github.com/fox-toolkit/fox v0.27.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tigerwill90/fox v0.26.2
 	go.opentelemetry.io/contrib/propagators/b3 v1.39.0
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
