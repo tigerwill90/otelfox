@@ -4,13 +4,18 @@
 [![codecov](https://codecov.io/gh/fox-toolkit/oteltracing/branch/master/graph/badge.svg?token=D6qSTlzEcE)](https://codecov.io/gh/fox-toolkit/oteltracing)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/fox-toolkit/oteltracing)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/fox-toolkit/oteltracing)
-# oteltracing
+# Oteltracing
 
-oteltracing is a middleware for [Fox](https://github.com/fox-toolkit/fox) that provides distributed 
+
+> [!NOTE]
+> This repository has been transferred from `github.com/tigerwill90/otelfox` to `github.com/fox-toolkit/oteltracing`.
+> Existing users should update their imports and `go.mod` accordingly.
+
+Oteltracing is a middleware for [Fox](https://github.com/fox-toolkit/fox) that provides distributed 
 tracing using [OpenTelemetry](https://opentelemetry.io/).
 
 ## Disclaimer
-oteltracing's API is linked to Fox router, and it will only reach v1 when the router is stabilized.
+Oteltracing's API is linked to Fox router, and it will only reach v1 when the router is stabilized.
 During the pre-v1 phase, breaking changes may occur and will be documented in the release notes.
 
 ## Getting started
