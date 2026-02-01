@@ -6,7 +6,6 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/fox-toolkit/oteltracing)
 # Oteltracing
 
-
 > [!NOTE]
 > This repository has been transferred from `github.com/tigerwill90/otelfox` to `github.com/fox-toolkit/oteltracing`.
 > Existing users should update their imports and `go.mod` accordingly.
