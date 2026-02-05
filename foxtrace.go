@@ -47,8 +47,8 @@ func Middleware(service string, opts ...Option) fox.MiddlewareFunc {
 		opt.apply(cfg)
 	}
 
-	tracer := cfg.provider.Tracer(ScopeName, oteltrace.WithInstrumentationVersion(Version()))
-	meter := cfg.meter.Meter(ScopeName, metric.WithInstrumentationVersion(Version()))
+	tracer := cfg.provider.Tracer(ScopeName, oteltrace.WithInstrumentationVersion(Version))
+	meter := cfg.meter.Meter(ScopeName, metric.WithInstrumentationVersion(Version))
 
 	sc := semconv.NewHTTPServer(meter)
 
